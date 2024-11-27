@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API - FileShare</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="theme-switch">
+        <button id="themeToggle">
+            <i class="fas fa-moon"></i>
+        </button>
+    </div>
+
+    <div class="container">
+        <h1>API</h1>
+        <p class="subtitle">Документация по использованию API</p>
+
+        <div class="api-section">
+            <div class="api-item">
+                <h3>Загрузка файла</h3>
+                <pre class="code-block">
+POST /api/upload
+Content-Type: multipart/form-data
+
+form-data:
+  file: (ваш файл)
+
+Ответ:
+{
+    "success": true,
+    "fileUrl": "http://domain.com/uploads/filename.ext",
+    "shortUrl": "http://domain.com/f/shortId"
+}</pre>
+                <div class="code-example">
+                    <h4>Пример на cURL:</h4>
+                    <pre class="code-block">curl -F "file=@file.jpg" http://localhost:3000/api/upload</pre>
+
+                    <h4>Пример на Python:</h4>
+                    <pre class="code-block">
+import requests
+
+files = {'file': open('file.jpg', 'rb')}
+response = requests.post('http://localhost:3000/api/upload', files=files)
+print(response.json())</pre>
+
+                    <h4>Пример на JavaScript:</h4>
+                    <pre class="code-block">
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+
+fetch('http://localhost:3000/api/upload', {
+    method: 'POST',
+    body: formData
+})
+.then(response => response.json())
+.then(data => console.log(data));</pre>
+                </div>
+            </div>
+
+            <div class="api-item">
+                <h3>Ограничения</h3>
+                <ul>
+                    <li>Максимальный размер файла: 100MB</li>
+                    <li>Запрещенные типы файлов: .exe, .php, .js и другие исполняемые файлы</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="navigation">
+            <a href="/" class="nav-link"><i class="fas fa-home"></i> На главную</a>
+            <a href="/faq.html" class="nav-link"><i class="fas fa-question-circle"></i> FAQ</a>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="/">Главная</a>
+                <a href="/faq.html">FAQ</a>
+                <a href="/api.html">API</a>
+            </div>
+            <p class="copyright">© 2024 FileShare | github.com/Master290</p>
+        </div>
+    </footer>
+
+    <script src="js/theme.js"></script>
+</body>
+</html> 

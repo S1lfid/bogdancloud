@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FileShare</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="theme-switch">
+        <button id="themeToggle">
+            <i class="fas fa-moon"></i>
+        </button>
+    </div>
+    <div class="container">
+        <h1>FileShare</h1>
+        <p class="subtitle">Простой и быстрый файлообменник. Ничего лишнего.</p>
+        
+        <div class="upload-area" id="dropZone">
+            <div class="upload-icon">
+                <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <p>Перетащите файл сюда или нажмите для выбора</p>
+            <p class="file-limits">Максимальный размер: 100MB</p>
+            <input type="file" id="fileInput" hidden>
+        </div>
+        <div id="uploadResult" class="result-area"></div>
+
+        <div class="navigation">
+            <a href="/faq.html" class="nav-link"><i class="fas fa-question-circle"></i> FAQ</a>
+            <a href="/api.html" class="nav-link"><i class="fas fa-code"></i> API</a>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="/">Главная</a>
+                <a href="/faq.html">FAQ</a>
+                <a href="/api.html">API</a>
+            </div>
+            <p class="copyright">© 2024 FileShare | github.com/Master290</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="js/upload.js"></script>
+</body>
+</html> 

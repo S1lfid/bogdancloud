@@ -1,0 +1,14 @@
+fileshare/
+├── backend/
+│   ├── server.js
+│   ├── routes/
+│   │   └── api.js
+│   └── config/
+│       └── config.js
+├── frontend/
+│   ├── index.html
+│   ├── styles/
+│   │   └── main.css
+│   └── js/
+│       └── upload.js
+└── uploads/ 
