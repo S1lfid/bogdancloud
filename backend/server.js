@@ -3,24 +3,21 @@ const multer = require('multer');
 const path = require('path');
 const cors = require('cors');
 const crypto = require('crypto');
+const fs = require('fs');
+const schedule = require('node-schedule');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Конфигурация
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
-const FORBIDDEN_TYPES = [
-    '.exe', '.msi', '.bat', '.cmd', '.sh', '.bash', '.php', '.php3', '.php4', '.php5', '.phtml',
-    '.asp', '.aspx', '.html', '.htm', '.xhtml', '.js', '.jsx', '.ts', '.tsx', '.cgi', '.pl', '.py',
-    '.jar', '.dll', '.vbs', '.ps1', '.wsf', '.com'
-];
+const MAX_FILE_SIZE = 500 * 1024 * 1024;
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static('frontend'));
 app.use('/uploads', express.static('uploads'));
 
-// База данных (для примера используем объект, в реальности нужно использовать настоящую БД)
+// База данных
 const files = new Map();
 
 // Настройка multer
@@ -29,7 +26,7 @@ const storage = multer.diskStorage({
         cb(null, 'uploads/');
     },
     filename: (req, file, cb) => {
-        const shortId = crypto.randomBytes(4).toString('hex');
+        const shortId = crypto.randomBytes(6).toString('hex');
         cb(null, shortId + path.extname(file.originalname));
     }
 });
@@ -38,19 +35,29 @@ const upload = multer({
     storage: storage,
     limits: {
         fileSize: MAX_FILE_SIZE
-    },
-    fileFilter: (req, file, cb) => {
-        const ext = path.extname(file.originalname).toLowerCase();
-        if (FORBIDDEN_TYPES.includes(ext)) {
-            cb(new Error('Запрещенный тип файла'));
-        } else {
-            cb(null, true);
-        }
     }
 });
 
+// Функция для удаления файла
+function deleteFile(fileId) {
+    const fileInfo = files.get(fileId);
+    if (fileInfo) {
+        // Удаляем физический файл
+        const filePath = path.join(__dirname, 'uploads', fileInfo.filename);
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+        // Удаляем из базы
+        files.delete(fileId);
+        console.log(`Файл ${fileId} удален`);
+    }
+}
+
 // API эндпоинты
 app.post('/api/upload', upload.single('file'), (req, res) => {
+    const startTime = Date.now();
+    const { expireTime } = req.body;
+    
     if (!req.file) {
         return res.status(400).json({ error: 'Файл не загружен' });
     }
@@ -58,17 +65,51 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     const fileId = path.parse(req.file.filename).name;
     const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
     
+    let expirationDate = null;
+    let deleteJob = null;
+// Добавьте этот эндпоинт в server.js
+app.get('/api/myip', (req, res) => {
+    const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    res.json({ ip: clientIp });
+});
+    // Устанавливаем время удаления
+    if (expireTime && expireTime !== 'unlimited') {
+        expirationDate = new Date();
+        const timeUnits = {
+            '3days': 3 * 24 * 60 * 60 * 1000,
+            'week': 7 * 24 * 60 * 60 * 1000,
+            'month': 30 * 24 * 60 * 60 * 1000,
+            '6months': 6 * 30 * 24 * 60 * 60 * 1000
+        };
+        
+        expirationDate.setTime(expirationDate.getTime() + timeUnits[expireTime]);
+        
+        // Планируем удаление
+        deleteJob = schedule.scheduleJob(expirationDate, () => {
+            deleteFile(fileId);
+        });
+    }
+
     files.set(fileId, {
         originalName: req.file.originalname,
         filename: req.file.filename,
         uploadDate: new Date(),
-        downloads: 0
+        expirationDate: expirationDate,
+        deleteJob: deleteJob,
+        downloads: 0,
+        size: req.file.size,
+        expireTime: expireTime
     });
+
+    const uploadTime = Date.now() - startTime;
 
     res.json({ 
         success: true, 
         fileUrl: fileUrl,
-        shortUrl: `${req.protocol}://${req.get('host')}/f/${fileId}`
+        shortUrl: `${req.protocol}://${req.get('host')}/f/${fileId}`,
+        uploadTime: uploadTime,
+        fileSize: req.file.size,
+        expirationDate: expirationDate
     });
 });
 
@@ -79,31 +120,47 @@ app.get('/f/:fileId', (req, res) => {
         return res.status(404).json({ error: 'Файл не найден' });
     }
 
+    // Проверяем не истекло ли время
+    if (fileInfo.expirationDate && new Date() > fileInfo.expirationDate) {
+        deleteFile(req.params.fileId);
+        return res.status(404).json({ error: 'Время хранения файла истекло' });
+    }
+
     fileInfo.downloads++;
     res.redirect(`/uploads/${fileInfo.filename}`);
 });
 
-// Добавим middleware для обработки ошибок после существующих настроек app.use()
-app.use((err, req, res, next) => {
-    if (err instanceof multer.MulterError) {
-        if (err.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).json({
-                error: `Файл слишком большой. Максимальный размер: ${MAX_FILE_SIZE / (1024 * 1024)}MB`
-            });
-        }
-        return res.status(400).json({ error: 'Ошибка при загрузке файла' });
-    }
+// Статистика файла
+app.get('/api/stats/:fileId', (req, res) => {
+    const fileInfo = files.get(req.params.fileId);
     
-    if (err.message === 'Запрещенный тип файла') {
-        return res.status(400).json({ 
-            error: `Этот тип файла запрещен по соображениям безопасности`
-        });
+    if (!fileInfo) {
+        return res.status(404).json({ error: 'Файл не найден' });
     }
-    
-    console.error(err);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+
+    res.json({
+        originalName: fileInfo.originalName,
+        uploadDate: fileInfo.uploadDate,
+        expirationDate: fileInfo.expirationDate,
+        downloads: fileInfo.downloads,
+        size: fileInfo.size,
+        expireTime: fileInfo.expireTime
+    });
 });
 
+// Очистка старых файлов при запуске
+function cleanupOldFiles() {
+    const now = new Date();
+    for (const [fileId, fileInfo] of files.entries()) {
+        if (fileInfo.expirationDate && now > fileInfo.expirationDate) {
+            deleteFile(fileId);
+        }
+    }
+}
+
+// Запускаем очистку при старте
+cleanupOldFiles();
+
 app.listen(port, () => {
-    console.log(`Сервер запущен на порту ${port}`);
-}); 
+    console.log(`БогданCloud запущен на порту ${port}`);
+});

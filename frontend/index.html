@@ -1,50 +1,154 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="light">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FileShare</title>
+    <title>БогданCloud</title>
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="theme-switch">
-        <button id="themeToggle">
-            <i class="fas fa-moon"></i>
+    <!-- Кнопка выбора темы -->
+    <div class="theme-selector">
+        <button class="theme-button" id="themeButton">
+            <span class="theme-icon" id="currentThemeIcon">🎌</span>
         </button>
+        
+        <div class="theme-menu" id="themeMenu">
+            <div class="theme-item" data-theme="japan-red">
+                <span class="theme-icon" style="background: #e62b1e;">🎌</span>
+                <span class="theme-name">Акаи</span>
+            </div>
+            <div class="theme-item" data-theme="japan-blue">
+                <span class="theme-icon" style="background: #0a7abc;">🏮</span>
+                <span class="theme-name">Аои</span>
+            </div>
+            <div class="theme-item" data-theme="sakura">
+                <span class="theme-icon" style="background: #ffb7c5;">🌸</span>
+                <span class="theme-name">Сакура</span>
+            </div>
+            <div class="theme-item" data-theme="dark-geisha">
+                <span class="theme-icon" style="background: #ff6b6b;">👺</span>
+                <span class="theme-name">Ёру</span>
+            </div>
+            <div class="theme-item" data-theme="modern-tokyo">
+                <span class="theme-icon" style="background: #00b4d8;">🗼</span>
+                <span class="theme-name">Токио</span>
+            </div>
+        </div>
     </div>
+
+    <!-- Плавающая кнопка времени хранения -->
+    <div class="time-selector">
+        <button class="time-button" id="timeButton">
+            <span class="time-icon" id="currentTimeIcon">⏰</span>
+            <span class="time-text" id="currentTimeText">Неограниченно</span>
+        </button>
+        
+        <div class="time-menu" id="timeMenu">
+            <div class="time-item" data-time="3days">
+                <span class="time-item-icon">🌅</span>
+                <div class="time-item-info">
+                    <span class="time-item-title">3 дня</span>
+                    <span class="time-item-desc">Краткосрочное хранение</span>
+                </div>
+            </div>
+            <div class="time-item" data-time="week">
+                <span class="time-item-icon">📅</span>
+                <div class="time-item-info">
+                    <span class="time-item-title">Неделя</span>
+                    <span class="time-item-desc">Для временных проектов</span>
+                </div>
+            </div>
+            <div class="time-item" data-time="month">
+                <span class="time-item-icon">📆</span>
+                <div class="time-item-info">
+                    <span class="time-item-title">Месяц</span>
+                    <span class="time-item-desc">Стандартное время</span>
+                </div>
+            </div>
+            <div class="time-item" data-time="6months">
+                <span class="time-item-icon">🗓️</span>
+                <div class="time-item-info">
+                    <span class="time-item-title">Полгода</span>
+                    <span class="time-item-desc">Долгосрочное хранение</span>
+                </div>
+            </div>
+            <div class="time-item" data-time="unlimited">
+                <span class="time-item-icon">∞</span>
+                <div class="time-item-info">
+                    <span class="time-item-title">Неограниченно</span>
+                    <span class="time-item-desc">Постоянное хранение</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
-        <h1>FileShare</h1>
-        <p class="subtitle">Простой и быстрый файлообменник. Ничего лишнего.</p>
+        <div class="header">
+            <div class="logo">БогданCloud</div>
+            <p class="subtitle">Облачко, где файлы улыбаются. </p>
+        </div>
         
         <div class="upload-area" id="dropZone">
             <div class="upload-icon">
                 <i class="fas fa-cloud-upload-alt"></i>
             </div>
             <p>Перетащите файл сюда или нажмите для выбора</p>
-            <p class="file-limits">Максимальный размер: 100MB</p>
+            <p class="file-limits">Максимальный размер: 500MB • Все форматы разрешены</p>
             <input type="file" id="fileInput" hidden>
         </div>
+        
         <div id="uploadResult" class="result-area"></div>
-
-        <div class="navigation">
-            <a href="/faq.html" class="nav-link"><i class="fas fa-question-circle"></i> FAQ</a>
-            <a href="/api.html" class="nav-link"><i class="fas fa-code"></i> API</a>
-        </div>
     </div>
 
     <footer class="footer">
         <div class="footer-content">
-            <div class="footer-links">
-                <a href="/">Главная</a>
-                <a href="/faq.html">FAQ</a>
-                <a href="/api.html">API</a>
-            </div>
-            <p class="copyright">© 2024 FileShare | github.com/Master290</p>
+<p>Создано с <i class="fas fa-heart" style="color:var(--primary-color)"></i> by <span class="creator"><a href="https://t.me/s1lfid" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">@s1lfid</a></span></p>
+            <p class="copyright">© 2025 БогданCloud • Люблю лабубу</p>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/time-selector.js"></script>
     <script src="js/upload.js"></script>
+    <!-- Строка с информацией о пользователе -->
+<div class="user-info" id="userInfo">
+    <div class="user-info-content">
+        <span class="user-ip">🖥️ Загружаем информацию...</span>
+        <span class="user-browser">🌐 Определяем браузер...</span>
+        <span class="user-location">🗺️ Ищем локацию...</span>
+    </div>
+</div>
+
+<script src="js/user-info.js"></script>
+<!-- Плавающая иконка истории -->
+<div class="history-floating" id="historyFloating" style="display: none;">
+    <button class="history-button" id="historyButton">
+        <i class="fas fa-history"></i>
+        <span class="history-badge" id="historyBadge">0</span>
+    </button>
+    
+    <div class="history-popup" id="historyPopup">
+        <div class="history-header">
+            <h3>📁 История загрузок</h3>
+            <button class="history-close" id="historyClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="history-content" id="historyContent">
+            <p class="history-empty">История загрузок пуста</p>
+        </div>
+        <div class="history-footer">
+            <button class="history-clear" id="historyClear">
+                <i class="fas fa-trash"></i> Очистить историю
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="js/history.js"></script>
 </body>
-</html> 
+</html>

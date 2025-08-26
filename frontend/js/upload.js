@@ -2,50 +2,62 @@ document.addEventListener('DOMContentLoaded', () => {
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
     const uploadResult = document.getElementById('uploadResult');
-    const themeToggle = document.getElementById('themeToggle');
-
-    // Тема
-    const theme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', theme);
-    updateThemeIcon();
-
-    themeToggle.addEventListener('click', () => {
-        const currentTheme = document.documentElement.getAttribute('data-theme');
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        updateThemeIcon();
-    });
-
-    function updateThemeIcon() {
-        const theme = document.documentElement.getAttribute('data-theme');
-        themeToggle.innerHTML = theme === 'light' 
-            ? '<i class="fas fa-moon"></i>' 
-            : '<i class="fas fa-sun"></i>';
-    }
 
     // Загрузка файлов
     dropZone.addEventListener('click', () => fileInput.click());
 
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
-        dropZone.style.transform = 'scale(1.02)';
+        dropZone.classList.add('drag-over');
     });
 
     dropZone.addEventListener('dragleave', () => {
-        dropZone.style.transform = 'scale(1)';
+        dropZone.classList.remove('drag-over');
     });
 
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
-        dropZone.style.transform = 'scale(1)';
+        dropZone.classList.remove('drag-over');
         const files = e.dataTransfer.files;
-        handleFile(files[0]);
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
     });
 
     fileInput.addEventListener('change', (e) => {
-        handleFile(e.target.files[0]);
+        if (e.target.files.length > 0) {
+            handleFile(e.target.files[0]);
+        }
     });
+
+    function formatFileSize(bytes) {
+        if (!bytes || bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function formatTime(ms) {
+        if (!ms) return '0мс';
+        if (ms < 1000) return ms + 'мс';
+        return (ms / 1000).toFixed(2) + 'с';
+    }
+
+    function formatExpirationDate(date) {
+        if (!date) return 'Неограниченно';
+        try {
+            return new Date(date).toLocaleDateString('ru-RU', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (e) {
+            return 'Неограниченно';
+        }
+    }
 
     function handleFile(file) {
         if (!file) {
@@ -53,26 +65,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (file.size > 100 * 1024 * 1024) {
-            showResult('error', 'Файл слишком большой. Максимальный размер: 100MB');
-            return;
-        }
-
-        const forbiddenTypes = [
-            '.exe', '.msi', '.bat', '.cmd', '.sh', '.bash', '.php', '.php3', '.php4', '.php5', '.phtml',
-            '.asp', '.aspx', '.html', '.htm', '.xhtml', '.js', '.jsx', '.ts', '.tsx', '.cgi', '.pl', '.py',
-            '.jar', '.dll', '.vbs', '.ps1', '.wsf', '.com'
-        ];
-        const fileExt = '.' + file.name.split('.').pop().toLowerCase();
-        if (forbiddenTypes.includes(fileExt)) {
-            showResult('error', 'Этот тип файла запрещен по соображениям безопасности');
+        if (file.size > 500 * 1024 * 1024) {
+            showResult('error', 'Файл слишком большой. Максимальный размер: 500MB');
             return;
         }
 
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('expireTime', window.selectedExpireTime || 'unlimited');
 
         showResult('loading', 'Загрузка файла...');
+        const startTime = Date.now();
 
         fetch('/api/upload', {
             method: 'POST',
@@ -86,18 +89,40 @@ document.addEventListener('DOMContentLoaded', () => {
             return data;
         })
         .then(data => {
+            const uploadTime = Date.now() - startTime;
+            const speed = data.fileSize / (uploadTime / 1000);
+            
+            // Добавляем в историю - ТЕПЕРЬ ПРАВИЛЬНО
+            if (window.addFileToHistory) {
+                window.addFileToHistory({
+                    shortUrl: data.shortUrl || '',
+                    fileUrl: data.fileUrl || '',
+                    fileName: file.name || 'Файл',
+                    fileSize: data.fileSize || 0,
+                    uploadTime: data.uploadTime || 0,
+                    expirationDate: data.expirationDate || null
+                });
+            }
+            
             showResult('success', `
-                <p class="success-message">Файл успешно загружен!</p>
+                <p class="success-message">Файл успешно загружен! 🎉</p>
                 <p>Короткая ссылка: <a href="${data.shortUrl}" target="_blank">${data.shortUrl}</a></p>
+                <p>Размер: ${formatFileSize(data.fileSize)}</p>
+                <p>Время загрузки: ${formatTime(data.uploadTime)}</p>
+                <p>Скорость: ${formatFileSize(speed)}/сек</p>
+                <p>Хранение до: ${formatExpirationDate(data.expirationDate)}</p>
             `);
         })
         .catch(error => {
-            showResult('error', error.message);
+            showResult('error', error.message || 'Произошла неизвестная ошибка');
         });
     }
 
     function showResult(type, message) {
+        if (!uploadResult) return;
+        
         uploadResult.style.display = 'block';
+        uploadResult.className = `result-area ${type}`;
         
         switch(type) {
             case 'loading':
@@ -111,28 +136,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'success':
                 uploadResult.innerHTML = message;
-                // Добавляем конфетти
-                confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                });
-                // Добавляем еще конфетти с разных сторон
-                setTimeout(() => {
+                try {
                     confetti({
-                        particleCount: 50,
-                        angle: 60,
-                        spread: 55,
-                        origin: { x: 0 }
+                        particleCount: 150,
+                        spread: 100,
+                        origin: { y: 0.6 }
                     });
-                    confetti({
-                        particleCount: 50,
-                        angle: 120,
-                        spread: 55,
-                        origin: { x: 1 }
-                    });
-                }, 250);
+                } catch (e) {
+                    console.log('Confetti error:', e);
+                }
                 break;
         }
     }
-}); 
+});
